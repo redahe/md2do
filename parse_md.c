@@ -46,16 +46,8 @@ void flush_todo_item() {
         (item[1] == '[') &&
         (item[2] == ' ') &&
         (item[3] == ']')) {
-      if (h_len> MIN_HEADER_LENGTH) {
-        if ((h_len+cur_i_length-3) > WINDOW_LENGTH) {
-          h_len= WINDOW_LENGTH-cur_i_length+3;
-        }
-        if (h_len< MIN_HEADER_LENGTH) {
-          h_len= MIN_HEADER_LENGTH;
-        }
-      }
+      short offset = 0;
       if ((cur_d_length==sizeof(date)) && validate_date()) {
-
         int month = (date[0]-(int)'0')*10 + (date[1]-(int)'0');
         int day = (date[3]-(int)'0')*10 + (date[4]-(int)'0');
         int year = (date[6]-(int)'0')*1000 + (date[7]-(int)'0')*100+
@@ -66,11 +58,21 @@ void flush_todo_item() {
            (loc_time->tm_year+1900 == year && loc_time->tm_mon+1 == month &&
             loc_time->tm_mday > day)) {
           write(1, "[1] [Overdue]", 13);
+          offset = 9;
         } else {
           write(1, "[3] [Scheduled]", 15);
+          offset = 11;
         }
       } else {
         write(1, "[2]", 3);
+      }
+      if (h_len> MIN_HEADER_LENGTH) {
+          if ((h_len+cur_i_length-3 + offset) > WINDOW_LENGTH) {
+            h_len= WINDOW_LENGTH-cur_i_length+3;
+          }
+          if (h_len< MIN_HEADER_LENGTH) {
+            h_len= MIN_HEADER_LENGTH;
+          }
       }
       write(1, header, h_len);
       write(1, "|", 1);
