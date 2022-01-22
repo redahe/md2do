@@ -7,11 +7,11 @@
  * All generated items end with '  # from_vimwiki', for auto-updates
  **/
 
+#include <time.h>
 #include <unistd.h>
 
 #define WINDOW_LENGTH 30
 #define MIN_HEADER_LENGTH 15
-
 
 char header[30];
 char item[80];
@@ -19,9 +19,27 @@ char date[10];
 int cur_h_length = 0;
 int cur_i_length = 0;
 int cur_d_length = 0;
+struct tm *loc_time;
 
 
-void write_todo_item() {
+
+int validate_date() {
+  if ((date[0] >= '0') && (date[0] <= '1') &&
+        (date[1] >= '0') && (date[1] <= '9') &&
+        (date[2] == '/') &&
+        (date[3] >= '0') && (date[3] <= '3') &&
+        (date[4] >= '0') && (date[4] <= '9') &&
+        (date[5] == '/') &&
+        (date[6] >= '0') && (date[6] <= '9') &&
+        (date[7] >= '0') && (date[7] <= '9') &&
+        (date[8] >= '0') && (date[8] <= '9') &&
+        (date[9] >= '0') && (date[9] <= '9')) {
+    return 1;
+  }
+  return 0;
+}
+
+void flush_todo_item() {
   int h_len = cur_h_length;
   if (cur_i_length > 4) {
     if ((item[0] == ' ') &&
@@ -36,36 +54,45 @@ void write_todo_item() {
           h_len= MIN_HEADER_LENGTH;
         }
       }
-      write(1, "[0]", 3);
+      if ((cur_d_length==sizeof(date)) && validate_date()) {
+
+        int month = (date[0]-(int)'0')*10 + (date[1]-(int)'0');
+        int day = (date[3]-(int)'0')*10 + (date[4]-(int)'0');
+        int year = (date[6]-(int)'0')*1000 + (date[7]-(int)'0')*100+
+                   (date[8]-(int)'0')*10 + (date[9]-(int)'0');
+
+        if ((loc_time->tm_year+1900 > year) ||
+           (loc_time->tm_year+1900 == year && loc_time->tm_mon+1  > month) ||
+           (loc_time->tm_year+1900 == year && loc_time->tm_mon+1 == month &&
+            loc_time->tm_mday > day)) {
+          write(1, "[1] [Overdue]", 13);
+        } else {
+          write(1, "[3] [Scheduled]", 15);
+        }
+      } else {
+        write(1, "[2]", 3);
+      }
       write(1, header, h_len);
       write(1, "|", 1);
       write(1, &item[4], cur_i_length-4);
       write(1, "  # from_vimwiki", 16);
       write(1, "\n", 1);
     }
+    cur_i_length = 0;
+    cur_d_length = 0;
   }
 }
 
+
 void write_apt_item() {
-  if (cur_d_length == sizeof(date)) {
-    if ((date[0] >= '0') && (date[0] <= '1') &&
-        (date[1] >= '0') && (date[1] <= '9') &&
-        (date[2] == '/') &&
-        (date[3] >= '0') && (date[3] <= '3') &&
-        (date[4] >= '0') && (date[4] <= '9') &&
-        (date[5] == '/') &&
-        (date[6] >= '0') && (date[6] <= '9') &&
-        (date[7] >= '0') && (date[7] <= '9') &&
-        (date[8] >= '0') && (date[8] <= '9') &&
-        (date[9] >= '0') && (date[9] <= '9')) {
-        write(1, date, cur_d_length);
-        write(1, " [1]", 4);
-        write(1, header, cur_h_length);
-        write(1, "|", 1);
-        write(1, &item[4], cur_i_length-4);
-        write(1, "  # from_vimwiki", 16);
-        write(1, "\n", 1);
-    }
+  if (cur_d_length == sizeof(date) && validate_date()) {
+      write(1, date, cur_d_length);
+      write(1, " [1]", 4);
+      write(1, header, cur_h_length);
+      write(1, "|", 1);
+      write(1, &item[4], cur_i_length-4);
+      write(1, "  # from_vimwiki", 16);
+      write(1, "\n", 1);
   }
 }
 
@@ -85,19 +112,20 @@ int main(int argc, char* argv[]) {
   unsigned short reading_item = 0;
   unsigned short reading_date = 0;
   
+  time_t curtime;   // not a primitive datatype
+  time(&curtime);
+  loc_time = localtime (&curtime);
+
   ssize_t rd;
   while((rd = read(0, buf, sizeof(buf)))>0) {
     for (int i=0; i<rd; i++) {
       if (buf[i] == '\n') {
         new_line = 1;
-        if (reading_item) {
-          if (!apts) {
-            write_todo_item();
-          }
-        }
         if (reading_date) {
           if (apts) {
             write_apt_item();
+          } else {
+            flush_todo_item();
           }
         }
         reading_header = 0;
@@ -109,6 +137,9 @@ int main(int argc, char* argv[]) {
         continue;
       }
       if ((buf[i] == '#') && (new_line)){
+       if (!apts) {
+          flush_todo_item();
+        }
         new_line = 0;
         reading_header = 1;
         cur_h_length = 0;
@@ -116,6 +147,9 @@ int main(int argc, char* argv[]) {
         continue;
      }
      if ((buf[i] == '-') && (new_line)){
+       if (!apts) {
+          flush_todo_item();
+        }
         new_line = 0;
         reading_item = 1;
         reading_header = 0;
@@ -151,6 +185,8 @@ int main(int argc, char* argv[]) {
           reading_date = 0;
           if (apts) {
             write_apt_item();
+          } else {
+            flush_todo_item();
           }
         }
       }

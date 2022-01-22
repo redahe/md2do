@@ -2,8 +2,8 @@
  * Beutify non-interactive output of calcurse -d X
  **/
 
-#include <unistd.h>
 #include <time.h>
+#include <unistd.h>
 
 
 char line[256];
