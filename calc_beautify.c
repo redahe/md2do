@@ -38,7 +38,7 @@ void proces_line(struct tm *loc_time) {
     if (cur_len > 16 && line[0] == ' ' && line[3] == ':' && line[8] == '>') {
       if (cur_date_rel == 0) {
         int hour_end = (line[10]-(int)'0')*10 + line[11]-(int)'0';
-        int minute_end = (line[12]-(int)'0')*10 + line[13]-(int)'0';
+        int minute_end = (line[13]-(int)'0')*10 + line[14]-(int)'0';
         if (hour_end < loc_time->tm_hour || (hour_end == loc_time->tm_hour &&
               minute_end < loc_time->tm_min)) {
             write(1, "\033[90m", 5);
