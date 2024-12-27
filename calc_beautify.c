@@ -1,5 +1,8 @@
 /**
- * Beutify non-interactive output of calcurse -d X
+ * Beutify non-interactive output of:
+ *
+ * calcurse --format-recur-apt " %S -> %E %m\n" -d 2
+ *
  **/
 
 #include <time.h>
@@ -32,10 +35,10 @@ void proces_line(struct tm *loc_time) {
         }
       }
     }  else
-    if (cur_len == 17 && line[0] == ' ' && line[1] == '-' && line[2] == ' ') {
+    if (cur_len > 16 && line[0] == ' ' && line[3] == ':' && line[8] == '>') {
       if (cur_date_rel == 0) {
-        int hour_end = (line[12]-(int)'0')*10 + line[13]-(int)'0';
-        int minute_end = (line[15]-(int)'0')*10 + line[16]-(int)'0';
+        int hour_end = (line[10]-(int)'0')*10 + line[11]-(int)'0';
+        int minute_end = (line[12]-(int)'0')*10 + line[13]-(int)'0';
         if (hour_end < loc_time->tm_hour || (hour_end == loc_time->tm_hour &&
               minute_end < loc_time->tm_min)) {
             write(1, "\033[90m", 5);
@@ -48,6 +51,9 @@ void proces_line(struct tm *loc_time) {
           }
         }
       }
+      else {
+        return; // Do not visualise time schedule for tomorrow
+      }
     }
   }
   write(1, line, cur_len);
@@ -57,7 +63,7 @@ void proces_line(struct tm *loc_time) {
 
 int main(int argc, char *argv[]) {
 
-  time_t curtime;   // not a primitive datatype
+  time_t curtime;
   time(&curtime);
   struct tm *loc_time;
   loc_time = localtime (&curtime);

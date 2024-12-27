@@ -1,4 +1,4 @@
-all: parse_md calc_beutify todo_beutify
+all: parse_md calc_beautify todo_beautify
 
 parse_md: parse_md.c
 	gcc -g -o parse_md parse_md.c
@@ -6,8 +6,8 @@ parse_md: parse_md.c
 parse_routines: parse_routines.c
 	gcc -g -o parse_routines parse_routines.c
 
-calc_beutify: calc_beutify.c
-	gcc -g -o calc_beutify calc_beutify.c
+calc_beautify: calc_beautify.c
+	gcc -g -o calc_beautify calc_beautify.c
 
-todo_beutify: todo_beutify.c
-	gcc -g -o todo_beutify todo_beutify.c
+todo_beautify: todo_beautify.c
+	gcc -g -o todo_beautify todo_beautify.c
